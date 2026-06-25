@@ -1,0 +1,91 @@
+/**
+ * Catppuccin Macchiato for FreshTomato
+ * ────────────────────────────────────────────────────────────
+ * Flavor   : Macchiato — rich violet-dark, warmer than Frappé
+ * Palette  : https://github.com/catppuccin/catppuccin
+ * Firmware : https://github.com/FreshTomato-Project/freshtomato-mips
+ *
+ * Install  : scp at-ctp-macchiato.css root@192.168.1.1:/www/
+ *            nvram set web_css=at-ctp-macchiato.css && nvram commit
+ */
+
+@import url('at.css');
+
+/* ════════════════════════════════════════════════════════════
+   Catppuccin Macchiato palette reference
+   base     #24273a   mantle   #1e2030   crust    #181926
+   surface0 #363a4f   surface1 #494d64   surface2 #5b6078
+   overlay0 #6e738d   overlay1 #8087a2   overlay2 #939ab7
+   text     #cad3f5   subtext1 #b8c0e0   subtext0 #a5adcb
+   mauve    #c6a0f6   lavender #b7bdf8   blue     #8aadf4
+   ════════════════════════════════════════════════════════════ */
+
+:root {
+	/* ── Backgrounds ──────────────────────────────────────────── */
+	--tomato-background:           #24273a; /* base   */
+	--tomato-panel-background:     #1e2030; /* mantle */
+	--tomato-container-background: #181926; /* crust  */
+
+	/* ── Text ────────────────────────────────────────────────── */
+	--tomato-color:                #cad3f5; /* text   */
+
+	/* ── Accent — Catppuccin mauve ───────────────────────────── */
+	--tomato-accent-color:         #c6a0f6;
+
+	/* ── Box-shadow RGB triplet (purple mauve glow) ──────────── */
+	--tomato-shadow-color:         198, 160, 246;
+
+	/* ── Control chrome ──────────────────────────────────────── */
+	--tomato-controls-border:        1px solid #494d64; /* surface1 */
+	--tomato-controls-border-radius: 6px;
+	--tomato-controls-size:          24px;
+
+	/* ══ Form-control SVG icons — fill recolored to mauve ══════
+	   Original at.css uses fill='%2327ae60' (green).
+	   Replaced with fill='%23c6a0f6' (Catppuccin Macchiato mauve).
+	   ══════════════════════════════════════════════════════════ */
+
+	/* Dropdown arrow */
+	--tomato-accent-select: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='292.4' height='292.4' fill='%23c6a0f6'><path d='M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z'/></svg>");
+
+	/* Warning / error indicator */
+	--tomato-accent-error: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='-2 -2 28 28' fill='%23c6a0f6'><path d='M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-1.351 6.493c-.08-.801.55-1.493 1.351-1.493s1.431.692 1.351 1.493l-.801 8.01c-.029.282-.266.497-.55.497s-.521-.215-.55-.498l-.801-8.009zm1.351 12.757c-.69 0-1.25-.56-1.25-1.25s.56-1.25 1.25-1.25 1.25.56 1.25 1.25-.56 1.25-1.25 1.25z'/></svg>");
+
+	/* Checkbox checkmark */
+	--tomato-accent-check: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='-2 -2 28 28' fill='%23c6a0f6'><path d='M20.285 2l-11.285 11.567-5.286-5.011-3.714 3.716 9 8.728 15-15.285z'/></svg>");
+
+	/* Radio button dot */
+	--tomato-accent-radio: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%23c6a0f6'><circle cx='12' cy='12' r='7'/></svg>");
+}
+
+/* ── Link colors ─────────────────────────────────────────────── */
+a,
+a:link,
+a:visited {
+	color: #8aadf4; /* Catppuccin blue */
+}
+a:hover,
+a:active {
+	color: #c6a0f6; /* Catppuccin mauve */
+}
+
+/* ── Bandwidth / traffic graph images (invert on dark bg) ─────── */
+img[src^="rp"] {
+	filter: grayscale(1) invert(1) brightness(2.5) contrast(1.1);
+}
+
+/* ── Scrollbars ──────────────────────────────────────────────── */
+* {
+	scrollbar-color: #5b6078 #1e2030; /* surface2, mantle */
+	scrollbar-width: thin;
+}
+::-webkit-scrollbar            { width: 8px; height: 8px; }
+::-webkit-scrollbar-track      { background: #1e2030; }
+::-webkit-scrollbar-thumb      { background: #5b6078; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover{ background: #6e738d; }
+
+/* ── Credit tooltip ──────────────────────────────────────────── */
+td#navi a.indent1[href*=about]:hover:after {
+	content: 'Catppuccin Macchiato for FreshTomato  ·  catppuccin.com';
+	left: -360px;
+}

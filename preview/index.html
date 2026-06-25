@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en" data-flavor="mocha">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catppuccin for FreshTomato — Theme Preview</title>
+  <meta name="description" content="Preview all 4 Catppuccin flavors (Mocha, Macchiato, Frappé, Latte) for the FreshTomato router firmware web UI.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       Catppuccin Palette Variables
+       ═══════════════════════════════════════════════════════════ */
+    :root { --transition: color 0.25s, background-color 0.25s, border-color 0.25s, box-shadow 0.25s; }
+
+    [data-flavor="mocha"] {
+      --base:#1e1e2e;--mantle:#181825;--crust:#11111b;
+      --surface0:#313244;--surface1:#45475a;--surface2:#585b70;
+      --overlay0:#6c7086;--overlay1:#7f849c;--overlay2:#9399b2;
+      --text:#cdd6f4;--subtext1:#bac2de;--subtext0:#a6adc8;
+      --rosewater:#f5e0dc;--flamingo:#f2cdcd;--pink:#f5c2e7;
+      --mauve:#cba6f7;--red:#f38ba8;--maroon:#eba0ac;
+      --peach:#fab387;--yellow:#f9e2af;--green:#a6e3a1;
+      --teal:#94e2d5;--sky:#89dceb;--sapphire:#74c7ec;
+      --blue:#89b4fa;--lavender:#b4befe;
+    }
+    [data-flavor="macchiato"] {
+      --base:#24273a;--mantle:#1e2030;--crust:#181926;
+      --surface0:#363a4f;--surface1:#494d64;--surface2:#5b6078;
+      --overlay0:#6e738d;--overlay1:#8087a2;--overlay2:#939ab7;
+      --text:#cad3f5;--subtext1:#b8c0e0;--subtext0:#a5adcb;
+      --rosewater:#f4dbd6;--flamingo:#f0c6c6;--pink:#f5bde6;
+      --mauve:#c6a0f6;--red:#ed8796;--maroon:#ee99a0;
+      --peach:#f5a97f;--yellow:#eed49f;--green:#a6da95;
+      --teal:#8bd5ca;--sky:#91d7e3;--sapphire:#7dc4e4;
+      --blue:#8aadf4;--lavender:#b7bdf8;
+    }
+    [data-flavor="frappe"] {
+      --base:#303446;--mantle:#292c3c;--crust:#232634;
+      --surface0:#414559;--surface1:#51576d;--surface2:#626880;
+      --overlay0:#737994;--overlay1:#838ba7;--overlay2:#949cbb;
+      --text:#c6d0f5;--subtext1:#b5bfe2;--subtext0:#a5adce;
+      --rosewater:#f2d5cf;--flamingo:#eebebe;--pink:#f4b8e4;
+      --mauve:#ca9ee6;--red:#e78284;--maroon:#ea999c;
+      --peach:#ef9f76;--yellow:#e5c890;--green:#a6d189;
+      --teal:#81c8be;--sky:#99d1db;--sapphire:#85c1dc;
+      --blue:#8caaee;--lavender:#babbf1;
+    }
+    [data-flavor="latte"] {
+      --base:#eff1f5;--mantle:#e6e9ef;--crust:#dce0e8;
+      --surface0:#ccd0da;--surface1:#bcc0cc;--surface2:#acb0be;
+      --overlay0:#9ca0b0;--overlay1:#8c8fa1;--overlay2:#7c7f93;
+      --text:#4c4f69;--subtext1:#5c5f77;--subtext0:#6c6f85;
+      --rosewater:#dc8a78;--flamingo:#dd7878;--pink:#ea76cb;
+      --mauve:#8839ef;--red:#d20f39;--maroon:#e64553;
+      --peach:#fe640b;--yellow:#df8e1d;--green:#40a02b;
+      --teal:#179299;--sky:#04a5e5;--sapphire:#209fb5;
+      --blue:#1e66f5;--lavender:#7287fd;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-family:'Inter',system-ui,sans-serif; font-size:14px; background:var(--base); color:var(--text); min-height:100vh; transition:var(--transition); }
+    a { color:var(--blue); text-decoration:none; transition:color 0.15s; }
+    a:hover { color:var(--mauve); }
+
+    /* Switcher bar */
+    .switcher-bar {
+      position:fixed; top:0; left:0; right:0; z-index:1000;
+      background:var(--crust); border-bottom:1px solid var(--surface0);
+      display:flex; align-items:center; gap:8px; padding:10px 20px;
+      transition:var(--transition);
+    }
+    .brand { display:flex; align-items:center; gap:8px; font-weight:600; font-size:13px; color:var(--text); margin-right:12px; flex-shrink:0; }
+    .flavor-btn {
+      padding:5px 14px; border-radius:20px; border:1px solid var(--surface1);
+      background:var(--surface0); color:var(--subtext0); font-family:'Inter',sans-serif;
+      font-size:12px; font-weight:500; cursor:pointer; transition:all 0.2s; white-space:nowrap;
+    }
+    .flavor-btn:hover { background:var(--surface1); color:var(--text); border-color:var(--surface2); }
+    .flavor-btn.active { background:var(--mauve); color:var(--base); border-color:var(--mauve); }
+    .file-hint { margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--overlay0); background:var(--surface0); padding:3px 10px; border-radius:4px; border:1px solid var(--surface1); }
+
+    /* Shell */
+    .router-shell { display:flex; min-height:100vh; padding-top:44px; }
+
+    /* Sidebar */
+    .sidebar { width:200px; flex-shrink:0; background:var(--mantle); border-right:1px solid var(--surface0); display:flex; flex-direction:column; transition:var(--transition); }
+    .sidebar-header { padding:18px 16px 14px; border-bottom:1px solid var(--surface0); }
+    .router-name { font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--overlay1); margin-bottom:4px; }
+    .router-model { font-size:13px; font-weight:600; color:var(--text); }
+    .router-ip { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--mauve); margin-top:2px; }
+    .nav-section { padding:10px 0; }
+    .nav-section-title { padding:4px 16px; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--overlay0); margin-top:4px; }
+    .nav-item { display:flex; align-items:center; gap:9px; padding:7px 16px; color:var(--subtext1); font-size:12.5px; cursor:pointer; border-left:2px solid transparent; transition:all 0.15s; }
+    .nav-item:hover { background:var(--surface0); color:var(--text); border-left-color:var(--surface2); }
+    .nav-item.active { background:var(--surface0); color:var(--mauve); border-left-color:var(--mauve); font-weight:500; }
+    .nav-item svg { width:14px; height:14px; fill:currentColor; flex-shrink:0; }
+
+    /* Main */
+    .main-content { flex:1; background:var(--base); transition:var(--transition); overflow-x:auto; }
+    .page-header { padding:18px 24px 14px; border-bottom:1px solid var(--surface0); display:flex; align-items:center; justify-content:space-between; }
+    .page-header h1 { font-size:17px; font-weight:600; color:var(--text); }
+    .breadcrumb { font-size:11px; color:var(--overlay1); }
+    .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:500; }
+    .badge-green { background:rgba(166,227,161,.15); color:var(--green); }
+    .badge-yellow { background:rgba(249,226,175,.15); color:var(--yellow); }
+    .badge-blue { background:rgba(137,180,250,.15); color:var(--blue); }
+    .content-body { padding:20px 24px; display:flex; flex-direction:column; gap:20px; }
+
+    /* Status cards */
+    .status-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; }
+    .status-card { background:var(--mantle); border:1px solid var(--surface0); border-radius:10px; padding:14px 16px; transition:var(--transition); }
+    .status-card:hover { border-color:var(--surface1); box-shadow:0 2px 12px rgba(0,0,0,.15); }
+    .card-label { font-size:10px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--overlay1); margin-bottom:8px; }
+    .card-value { font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:500; color:var(--text); }
+    .card-unit { font-size:11px; color:var(--subtext0); margin-top:3px; }
+
+    /* Panels */
+    .panel { background:var(--mantle); border:1px solid var(--surface0); border-radius:10px; overflow:hidden; transition:var(--transition); }
+    .panel-header { padding:11px 16px; background:var(--surface0); border-bottom:1px solid var(--surface1); font-size:12px; font-weight:600; color:var(--text); display:flex; align-items:center; justify-content:space-between; }
+
+    /* Table */
+    table { width:100%; border-collapse:collapse; font-size:12.5px; }
+    thead th { padding:9px 14px; text-align:left; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--overlay2); background:var(--surface0); border-bottom:1px solid var(--surface1); }
+    tbody td { padding:9px 14px; border-bottom:1px solid var(--surface0); color:var(--subtext1); transition:var(--transition); }
+    tbody tr:last-child td { border-bottom:none; }
+    tbody tr:hover td { background:var(--surface0); color:var(--text); }
+    .mono { font-family:'JetBrains Mono',monospace; font-size:11.5px; }
+    td.hi { color:var(--text); font-weight:500; }
+
+    /* Bw bar */
+    .bw-wrap { display:flex; align-items:center; gap:8px; }
+    .bw-bar { flex:1; height:6px; background:var(--surface0); border-radius:3px; overflow:hidden; }
+    .bw-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--blue),var(--mauve)); transition:width 0.8s cubic-bezier(.4,0,.2,1); }
+    .bw-pct { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--overlay1); width:30px; text-align:right; }
+
+    /* Form */
+    .form-grid { display:grid; grid-template-columns:160px 1fr; gap:12px 16px; align-items:start; padding:16px; }
+    .form-label { font-size:12px; font-weight:500; color:var(--subtext1); padding-top:7px; }
+    .form-label small { display:block; font-size:10px; color:var(--overlay0); font-weight:400; margin-top:2px; }
+    input[type="text"], input[type="password"], select {
+      width:100%; max-width:320px; padding:6px 10px;
+      background:var(--crust); border:1px solid var(--surface1); border-radius:6px;
+      color:var(--text); font-family:'Inter',sans-serif; font-size:12.5px;
+      outline:none; transition:border-color 0.15s,box-shadow 0.15s; appearance:none;
+    }
+    input[type="text"]:focus, input[type="password"]:focus, select:focus {
+      border-color:var(--mauve); box-shadow:0 0 0 3px rgba(203,166,247,.15);
+    }
+    input[type="checkbox"], input[type="radio"] { accent-color:var(--mauve); cursor:pointer; }
+    .cb-row { display:flex; align-items:center; gap:8px; }
+    .radio-group { display:flex; gap:16px; }
+
+    /* Buttons */
+    .btn-row { padding:12px 16px; border-top:1px solid var(--surface0); display:flex; gap:8px; }
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; border-radius:6px; border:1px solid transparent; font-family:'Inter',sans-serif; font-size:12.5px; font-weight:500; cursor:pointer; transition:all 0.15s; }
+    .btn-primary { background:var(--mauve); color:var(--base); border-color:var(--mauve); }
+    .btn-primary:hover { filter:brightness(1.1); }
+    .btn-secondary { background:var(--surface0); color:var(--text); border-color:var(--surface1); }
+    .btn-secondary:hover { background:var(--surface1); }
+    .btn-danger { background:transparent; color:var(--red); border-color:var(--red); }
+    .btn-danger:hover { background:var(--red); color:var(--base); }
+    .btn svg { width:13px; height:13px; fill:currentColor; }
+
+    /* Palette strip */
+    .palette-strip { display:flex; gap:0; height:24px; border-radius:8px; overflow:hidden; border:1px solid var(--surface0); }
+    .swatch { flex:1; transition:transform 0.15s; cursor:help; }
+    .swatch:hover { transform:scaleY(1.3); z-index:1; }
+
+    /* Log */
+    .log-box { background:var(--crust); border-top:1px solid var(--surface0); padding:12px 16px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--subtext0); line-height:1.7; max-height:120px; overflow-y:auto; }
+    .log-g{color:var(--green);} .log-b{color:var(--blue);} .log-m{color:var(--mauve);}
+    .log-r{color:var(--red);}   .log-y{color:var(--yellow);} .log-d{color:var(--overlay0);}
+
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    @media(max-width:900px){.two-col{grid-template-columns:1fr;}}
+
+    footer { text-align:center; padding:20px; font-size:11px; color:var(--overlay0); border-top:1px solid var(--surface0); }
+    footer a { color:var(--mauve); }
+  </style>
+</head>
+<body>
+
+<!-- Switcher bar -->
+<div class="switcher-bar">
+  <div class="brand">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="13" r="8" fill="var(--mauve)" opacity="0.2"/>
+      <path d="M9 12a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm6 0a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z" fill="var(--mauve)"/>
+      <path d="M4 5l3 4M20 5l-3 4" stroke="var(--mauve)" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M9.5 15.5s.833 1.5 2.5 1.5 2.5-1.5 2.5-1.5" stroke="var(--mauve)" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>
+    Catppuccin · FreshTomato
+  </div>
+  <button class="flavor-btn active" id="btn-mocha"     onclick="setFlavor('mocha')">🌙 Mocha</button>
+  <button class="flavor-btn"        id="btn-macchiato" onclick="setFlavor('macchiato')">🌺 Macchiato</button>
+  <button class="flavor-btn"        id="btn-frappe"    onclick="setFlavor('frappe')">🪴 Frappé</button>
+  <button class="flavor-btn"        id="btn-latte"     onclick="setFlavor('latte')">🌻 Latte</button>
+  <div class="file-hint" id="file-hint">at-ctp-mocha.css</div>
+</div>
+
+<!-- Router shell -->
+<div class="router-shell">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="router-name">FreshTomato</div>
+      <div class="router-model">ASUS RT-N66U</div>
+      <div class="router-ip">192.168.1.1</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">Overview</div>
+      <div class="nav-item active">
+        <svg viewBox="0 0 24 24"><path d="M20 7.093l-3-3v-2.093h3v5.093zm4 5.907h-3v10h-18v-10h-3l12-12 12 12zm-10 2h-4v6h4v-6z"/></svg>
+        Status
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M7 19h-6v-11h6v11zm8-18h-6v18h6v-18zm8 11h-6v7h6v-7zm1 9h-24v2h24v-2z"/></svg>
+        Bandwidth
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M13 12.414v-12.364c6.158.51 11 5.66 11 11.95 0 6.627-5.373 12-12 12-2.953 0-5.654-1.072-7.744-2.842l8.744-8.744zm-2-12.364c-6.158.51-11 5.66-11 11.95 0 2.954 1.072 5.654 2.842 7.745l1.42-1.42c-1.412-1.725-2.262-3.928-2.262-6.325 0-5.177 3.953-9.446 9-9.949v-2.001z"/></svg>
+        IP Traffic
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">Settings</div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M19 18c0 1.104-.896 2-2 2s-2-.896-2-2 .896-2 2-2 2 .896 2 2zm-14-3c-1.654 0-3 1.346-3 3s1.346 3 3 3h14c1.654 0 3-1.346 3-3s-1.346-3-3-3h-14zm19 3c0 2.761-2.239 5-5 5h-14c-2.761 0-5-2.239-5-5s2.239-5 5-5h14c2.761 0 5 2.239 5 5zm0-12c0 2.761-2.239 5-5 5h-14c-2.761 0-5-2.239-5-5s2.239-5 5-5h14c2.761 0 5 2.239 5 5zm-15 0c0-1.104-.896-2-2-2s-2 .896-2 2 .896 2 2 2 2-.896 2-2z"/></svg>
+        Basic Setup
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M12 0c-3.371 2.866-5.484 3-9 3v11.535c0 4.603 3.203 5.804 9 9.465 5.797-3.661 9-4.862 9-9.465v-11.535c-3.516 0-5.629-.134-9-3z"/></svg>
+        VPN
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M23.269 19.743l-11.945-11.945c-.557-.557-.842-1.33-.783-2.115.115-1.485-.395-3.009-1.529-4.146-1.03-1.028-2.376-1.537-3.723-1.537-.507 0-1.015.072-1.505.216l3.17 3.17c.344 1.589-1.959 3.918-3.567 3.567l-3.169-3.17c-.145.492-.218 1-.218 1.509 0 1.347.51 2.691 1.538 3.721 1.135 1.136 2.66 1.645 4.146 1.53.783-.06 1.557.226 2.113.783l11.946 11.944c.468.468 1.102.73 1.763.73 1.368 0 2.494-1.108 2.494-2.494 0-.638-.244-1.276-.731-1.763z"/></svg>
+        Tools
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">Admin</div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M24 13.616v-3.232c-1.651-.587-2.694-.752-3.219-2.019v-.001c-.527-1.271.1-2.134.847-3.707l-2.285-2.285c-1.561.742-2.433 1.375-3.707.847h-.001c-1.269-.526-1.435-1.576-2.019-3.219h-3.232c-.582 1.635-.749 2.692-2.019 3.219h-.001c-1.271.528-2.132-.098-3.707-.847l-2.285 2.285c.745 1.568 1.375 2.434.847 3.707-.527 1.271-1.584 1.438-3.219 2.02v3.232c1.632.58 2.692.749 3.219 2.019.53 1.282-.114 2.166-.847 3.707l2.285 2.286c1.562-.743 2.434-1.375 3.707-.847h.001c1.27.526 1.436 1.579 2.019 3.219h3.232c.582-1.636.75-2.69 2.027-3.222h.001c1.262-.524 2.12.101 3.698.851l2.285-2.286c-.744-1.563-1.375-2.433-.848-3.706.527-1.271 1.588-1.44 3.221-2.021zm-12 2.384c-2.209 0-4-1.791-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4z"/></svg>
+        Administration
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-.001 5.75c.69 0 1.251.56 1.251 1.25s-.561 1.25-1.251 1.25-1.249-.56-1.249-1.25.559-1.25 1.249-1.25zm2.001 12.25h-4v-1c.484-.179 1-.201 1-.735v-4.467c0-.534-.516-.618-1-.797v-1h3v6.265c0 .535.517.558 1 .735v.999z"/></svg>
+        About
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <div class="breadcrumb">Overview › Router Status</div>
+        <h1>Router Status</h1>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span class="badge badge-green">
+          <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="currentColor"/></svg>
+          Connected
+        </span>
+        <span class="badge badge-yellow">Uptime 14d 7h</span>
+      </div>
+    </div>
+
+    <div class="content-body">
+
+      <!-- Status cards -->
+      <div class="status-cards">
+        <div class="status-card">
+          <div class="card-label">WAN IP</div>
+          <div class="card-value" style="font-size:14px;">203.0.113.42</div>
+          <div class="card-unit"><a href="#">isp-gateway.net</a></div>
+        </div>
+        <div class="status-card">
+          <div class="card-label">CPU Load</div>
+          <div class="card-value">0.38</div>
+          <div class="card-unit">1 min avg · dual-core</div>
+        </div>
+        <div class="status-card">
+          <div class="card-label">RAM Used</div>
+          <div class="card-value">64<span style="font-size:12px;color:var(--subtext0)"> MB</span></div>
+          <div class="card-unit">128 MB total · 50%</div>
+        </div>
+        <div class="status-card">
+          <div class="card-label">NVRAM</div>
+          <div class="card-value">28<span style="font-size:12px;color:var(--subtext0)"> KB</span></div>
+          <div class="card-unit">64 KB total · 44%</div>
+        </div>
+      </div>
+
+      <!-- Two column -->
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-header">
+            DHCP Leases
+            <span class="badge badge-blue">4 active</span>
+          </div>
+          <table>
+            <thead><tr><th>Hostname</th><th>IP Address</th><th>Expires</th></tr></thead>
+            <tbody>
+              <tr><td class="hi">neptune-pc</td><td><span class="mono">192.168.1.101</span></td><td><span class="badge badge-green">23h 12m</span></td></tr>
+              <tr><td class="hi">phone-pixel</td><td><span class="mono">192.168.1.102</span></td><td><span class="badge badge-green">21h 44m</span></td></tr>
+              <tr><td class="hi">raspberry-pi</td><td><span class="mono">192.168.1.110</span></td><td><span class="badge badge-yellow">2h 05m</span></td></tr>
+              <tr><td class="hi">smart-tv</td><td><span class="mono">192.168.1.120</span></td><td><span class="badge badge-green">20h 33m</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">Interface Traffic</div>
+          <table>
+            <thead><tr><th>Interface</th><th>Today</th><th>Load</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="hi">WAN (ppp0)</td>
+                <td><span class="mono">4.2 GB ↓</span></td>
+                <td><div class="bw-wrap"><div class="bw-bar"><div class="bw-fill" data-w="72"></div></div><div class="bw-pct">72%</div></div></td>
+              </tr>
+              <tr>
+                <td class="hi">LAN (br0)</td>
+                <td><span class="mono">1.8 GB ↓</span></td>
+                <td><div class="bw-wrap"><div class="bw-bar"><div class="bw-fill" data-w="35"></div></div><div class="bw-pct">35%</div></div></td>
+              </tr>
+              <tr>
+                <td class="hi">WLAN (wl0)</td>
+                <td><span class="mono">890 MB ↓</span></td>
+                <td><div class="bw-wrap"><div class="bw-bar"><div class="bw-fill" data-w="18"></div></div><div class="bw-pct">18%</div></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Settings form -->
+      <div class="panel">
+        <div class="panel-header">Administration — Admin Access</div>
+        <div class="form-grid">
+          <label class="form-label">HTTP Port<small>Default: 80</small></label>
+          <input type="text" value="80" style="max-width:120px;">
+
+          <label class="form-label">Web CSS Theme</label>
+          <select id="theme-select">
+            <option>at-ctp-mocha (current)</option>
+            <option>at-ctp-macchiato</option>
+            <option>at-ctp-frappe</option>
+            <option>at-ctp-latte</option>
+            <option>at-dark</option>
+            <option>at-blue</option>
+          </select>
+
+          <label class="form-label">Access Mode</label>
+          <div class="radio-group">
+            <label class="cb-row"><input type="radio" name="acc" checked> HTTP</label>
+            <label class="cb-row"><input type="radio" name="acc"> HTTPS</label>
+            <label class="cb-row"><input type="radio" name="acc"> Both</label>
+          </div>
+
+          <label class="form-label">SSH Access</label>
+          <label class="cb-row"><input type="checkbox" checked> Enable SSH server</label>
+
+          <label class="form-label">Password</label>
+          <input type="password" value="supersecretpass" style="max-width:220px;">
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary">
+            <svg viewBox="0 0 24 24"><path d="M20.285 2l-11.285 11.567-5.286-5.011-3.714 3.716 9 8.728 15-15.285z"/></svg>
+            Save
+          </button>
+          <button class="btn btn-secondary">Discard</button>
+          <button class="btn btn-danger" style="margin-left:auto;">
+            <svg viewBox="0 0 24 24"><path d="M13.5 2c-5.288 0-9.649 3.914-10.377 9h-3.123l4 5.917 4-5.917h-2.847c.711-3.972 4.174-7 8.347-7 4.687 0 8.5 3.813 8.5 8.5s-3.813 8.5-8.5 8.5c-3.015 0-5.662-1.583-7.171-3.957l-1.2 1.775c1.916 2.536 4.948 4.182 8.371 4.182 5.797 0 10.5-4.702 10.5-10.5s-4.703-10.5-10.5-10.5z"/></svg>
+            Reboot
+          </button>
+        </div>
+      </div>
+
+      <!-- Palette + log -->
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-header">Catppuccin Palette — current flavor</div>
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+            <div class="palette-strip">
+              <div class="swatch" style="background:var(--rosewater)" title="Rosewater"></div>
+              <div class="swatch" style="background:var(--flamingo)"  title="Flamingo"></div>
+              <div class="swatch" style="background:var(--pink)"      title="Pink"></div>
+              <div class="swatch" style="background:var(--mauve)"     title="Mauve ★"></div>
+              <div class="swatch" style="background:var(--red)"       title="Red"></div>
+              <div class="swatch" style="background:var(--maroon)"    title="Maroon"></div>
+              <div class="swatch" style="background:var(--peach)"     title="Peach"></div>
+              <div class="swatch" style="background:var(--yellow)"    title="Yellow"></div>
+              <div class="swatch" style="background:var(--green)"     title="Green"></div>
+              <div class="swatch" style="background:var(--teal)"      title="Teal"></div>
+              <div class="swatch" style="background:var(--sky)"       title="Sky"></div>
+              <div class="swatch" style="background:var(--sapphire)"  title="Sapphire"></div>
+              <div class="swatch" style="background:var(--blue)"      title="Blue"></div>
+              <div class="swatch" style="background:var(--lavender)"  title="Lavender"></div>
+            </div>
+            <div class="palette-strip">
+              <div class="swatch" style="background:var(--text)"     title="Text"></div>
+              <div class="swatch" style="background:var(--subtext1)" title="Subtext1"></div>
+              <div class="swatch" style="background:var(--subtext0)" title="Subtext0"></div>
+              <div class="swatch" style="background:var(--overlay2)" title="Overlay2"></div>
+              <div class="swatch" style="background:var(--overlay1)" title="Overlay1"></div>
+              <div class="swatch" style="background:var(--overlay0)" title="Overlay0"></div>
+              <div class="swatch" style="background:var(--surface2)" title="Surface2"></div>
+              <div class="swatch" style="background:var(--surface1)" title="Surface1"></div>
+              <div class="swatch" style="background:var(--surface0)" title="Surface0"></div>
+              <div class="swatch" style="background:var(--base)"     title="Base"></div>
+              <div class="swatch" style="background:var(--mantle)"   title="Mantle"></div>
+              <div class="swatch" style="background:var(--crust)"    title="Crust"></div>
+            </div>
+            <p style="font-size:11px;color:var(--overlay0);text-align:center;">Hover swatches · ★ = accent used for icons &amp; form controls</p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">System Log</div>
+          <div class="log-box">
+<span class="log-d">Jun 25 18:00:01</span> <span class="log-b">kernel:</span> br0: topology change detected, propagating<br>
+<span class="log-d">Jun 25 18:00:01</span> <span class="log-g">dnsmasq:</span> DHCP lease renewed 192.168.1.102 phone-pixel<br>
+<span class="log-d">Jun 25 18:02:14</span> <span class="log-m">miniupnpd:</span> mapping added TCP 203.0.113.42:32400 &rarr; 192.168.1.101<br>
+<span class="log-d">Jun 25 18:14:55</span> <span class="log-y">crond:</span> rescheduled task 'bwmon' — next in 5m<br>
+<span class="log-d">Jun 25 18:20:01</span> <span class="log-g">dnsmasq:</span> DHCP lease 192.168.1.120 smart-tv renewed<br>
+<span class="log-d">Jun 25 18:25:33</span> <span class="log-b">wl0:</span> ASSOC 48:e7:da:ab:cd:ef RSSI -62<br>
+<span class="log-d">Jun 25 18:28:11</span> <span class="log-r">firewall:</span> BLOCKED IN=ppp0 SRC=198.51.100.5 DPT=22<br>
+<span class="log-d">Jun 25 18:30:00</span> <span class="log-g">dnsmasq:</span> DHCP lease 192.168.1.110 raspberry-pi renewed<br>
+<span class="log-d">Jun 25 18:48:59</span> <span class="log-m">theme:</span> Catppuccin loaded — have a nice session 🐱<br>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <footer>
+      <a href="https://github.com/catppuccin/catppuccin">Catppuccin</a> ×
+      <a href="https://github.com/FreshTomato-Project/freshtomato-mips">FreshTomato</a>
+      &ensp;·&ensp; Static preview — install a <code style="color:var(--mauve)">at-ctp-*.css</code> file on your router to apply the real theme.
+    </footer>
+  </main>
+</div>
+
+<script>
+  const files = {
+    mocha:'at-ctp-mocha.css', macchiato:'at-ctp-macchiato.css',
+    frappe:'at-ctp-frappe.css', latte:'at-ctp-latte.css'
+  };
+  function setFlavor(name) {
+    document.documentElement.setAttribute('data-flavor', name);
+    document.getElementById('file-hint').textContent = files[name];
+    document.querySelectorAll('.flavor-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-' + name).classList.add('active');
+    // update theme select to match
+    const sel = document.getElementById('theme-select');
+    sel.options[0].text = files[name] + ' (current)';
+  }
+  // Animate bandwidth bars
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.bw-fill').forEach(el => {
+      const w = el.dataset.w + '%';
+      el.style.width = '0';
+      requestAnimationFrame(() => setTimeout(() => { el.style.width = w; }, 120));
+    });
+  });
+</script>
+</body>
+</html>
