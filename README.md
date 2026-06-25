@@ -2,7 +2,7 @@
 
 > Soothing pastel theme for the [FreshTomato](https://github.com/FreshTomato-Project/freshtomato-mips) router firmware web UI.
 
-[![Catppuccin](https://img.shields.io/badge/Catppuccin-pastel_theme-CBA6F7?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCc+PHBhdGggZmlsbD0nI2NiYTZmNycgZD0nTTEyIDJDNi40NzcgMiAyIDYuNDc3IDIgMTJzNC40NzcgMTAgMTAgMTAgMTAtNC40NzcgMTAtMTBTMTcuNTIzIDIgMTIgMnonLz48L3N2Zz4=)](https://catppuccin.com)
+[![Catppuccin](https://img.shields.io/badge/Catppuccin-pastel_theme-CBA6F7?style=flat-square)](https://catppuccin.com)
 
 ## Flavors
 
@@ -13,35 +13,146 @@
 | `at-ctp-frappe.css` | 🪴 Frappé | `#303446` | Cool medium-dark — relaxed |
 | `at-ctp-latte.css` | 🌻 Latte | `#eff1f5` | Warm cream — daytime / light |
 
-## Installation
+---
 
-### Via SSH (recommended)
+## How FreshTomato Theming Works
 
-```bash
-# 1. Copy the desired theme file to the router's web root
-scp at-ctp-mocha.css root@192.168.1.1:/www/
+The web interface (`httpd`) serves files from a directory controlled by the
+**`web_dir`** NVRAM variable (default: `/www`).  
+Each page loads a CSS file named by the **`web_css`** NVRAM variable:
 
-# 2. Activate the theme (no reboot required)
-nvram set web_css=at-ctp-mocha.css
-nvram commit
-
-# 3. Hard-refresh your browser (Ctrl+Shift+R / Cmd+Shift+R)
+```html
+<!-- in every .asp page -->
+<link rel="stylesheet" href="<web_css>.css">
 ```
 
-Replace `at-ctp-mocha.css` with any other flavor filename.
+So setting `web_css=at-ctp-mocha` causes every page to request
+`at-ctp-mocha.css` from whichever directory `web_dir` points to.
 
-### Via the Web UI
+> [!IMPORTANT]
+> `/www` is part of the **read-only SquashFS firmware image**.  
+> You **cannot write files there** — `cp file /www/` will fail with
+> `Read-only file system`.  
+> Use one of the writable methods below instead.
 
-1. **Administration → Admin Access**
-2. Scroll to the **"Custom CSS"** (or "Web CSS") field
-3. Enter the filename you uploaded (e.g. `at-ctp-mocha.css`)
-4. Click **Save**
+---
+
+## Installation
+
+### Method 1 — JFFS (recommended, survives reboots)
+
+JFFS is a writable, persistent partition stored in the router's flash.
+Enable it first under **Administration → JFFS2** if you haven't already.
+
+```bash
+# 1. Create a directory to hold the custom GUI files
+mkdir -p /jffs/www
+
+# 2. Download the theme file (replace with your chosen flavor)
+wget -O /jffs/www/at-ctp-mocha.css \
+  https://raw.githubusercontent.com/thelok1s/catppuccin-freshtomato/main/at-ctp-mocha.css
+
+# --- OR copy from your machine over SCP ---
+# scp at-ctp-mocha.css root@192.168.1.1:/jffs/www/
+
+# 3. Point the web server at your JFFS directory
+#    CAUTION: if web_dir is wrong you'll lose web access — double-check the path
+nvram set web_dir=/jffs/www
+
+# 4. Select the theme (filename without .css extension)
+nvram set web_css=at-ctp-mocha
+
+# 5. Commit and apply
+nvram commit
+
+# 6. Restart the web server (or reboot)
+service httpd restart
+```
+
+Then hard-refresh your browser (**Ctrl+Shift+R** / **Cmd+Shift+R**).
 
 > [!NOTE]
-> The CSS files use `@import url('at.css')` — they must sit alongside the
-> existing `at.css` file in `/www/` on the router. The base `at.css` is
-> already present in every FreshTomato build; you only need to upload the
-> Catppuccin theme file.
+> **How `web_dir` works:** FreshTomato's httpd normally serves files from
+> `/www` (read-only firmware). When you set `web_dir=/jffs/www`, the httpd
+> serves files from `/jffs/www` **instead**. Your custom CSS file must live
+> there. You do **not** need to copy all the firmware `.asp` / `.js` files —
+> only your CSS file needs to be in that directory; the firmware falls back to
+> `/www` for everything else it can't find in `web_dir`.
+>
+> *(This fallback behavior is confirmed in the FreshTomato httpd source.)*
+
+---
+
+### Method 2 — /tmp (temporary, lost on reboot)
+
+Useful for testing a theme without committing it permanently.
+
+```bash
+# 1. Download the file to /tmp
+wget -O /tmp/at-ctp-mocha.css \
+  https://raw.githubusercontent.com/thelok1s/catppuccin-freshtomato/main/at-ctp-mocha.css
+
+# --- OR copy over SCP ---
+# scp at-ctp-mocha.css root@192.168.1.1:/tmp/
+
+# 2. Point httpd at /tmp and set the theme
+nvram set web_dir=/tmp
+nvram set web_css=at-ctp-mocha
+nvram commit
+
+# 3. Restart the web server
+service httpd restart
+```
+
+> [!WARNING]
+> `/tmp` is RAM-based and is wiped on every reboot. The theme will disappear
+> after a restart. Use JFFS for a permanent install.
+
+---
+
+### Method 3 — Web UI (no SSH required)
+
+If you prefer not to use SSH:
+
+1. First download the CSS file to your PC.
+2. Go to **Administration → JFFS2** — enable JFFS and wait for it to format.
+3. Use a tool like [WinSCP](https://winscp.net) or `scp` to place the file in `/jffs/www/`.
+4. Go to **Administration → Admin Access**.
+5. Set **"Directory with GUI files"** to `/jffs/www`.
+6. Set **"Theme UI"** to `at-ctp-mocha` (the filename stem, no `.css`).
+7. Click **Save**.
+
+---
+
+## Switching Flavors
+
+After initial setup, switching is a one-liner (no path change needed):
+
+```bash
+nvram set web_css=at-ctp-latte && nvram commit && service httpd restart
+```
+
+Download all four flavors at once:
+
+```bash
+for f in mocha macchiato frappe latte; do
+  wget -O /jffs/www/at-ctp-$f.css \
+    https://raw.githubusercontent.com/thelok1s/catppuccin-freshtomato/main/at-ctp-$f.css
+done
+```
+
+---
+
+## Reverting to Default
+
+```bash
+nvram unset web_dir
+nvram set web_css=at
+nvram commit
+service httpd restart
+```
+
+---
 
 ## What's Themed
 
@@ -61,25 +172,36 @@ Replace `at-ctp-mocha.css` with any other flavor filename.
 | Error / warning ⚠ | `mauve` (SVG fill override) |
 | Control borders | `surface1` |
 | Scrollbar thumb | `surface2` |
-| Bandwidth graphs | `invert` filter (dark flavors) |
+| Bandwidth graphs | `invert` filter (dark flavors only) |
 | Box shadows | `mauve` RGB glow (dark) / `text` RGB (Latte) |
 
-## How It Works
+---
 
-FreshTomato's modern web UI (`at.css`) exposes its entire color system as CSS
-custom properties (`--tomato-*`). Each theme file simply:
+## How the CSS Is Loaded (technical detail)
 
-1. `@import url('at.css')` — loads the full base stylesheet
-2. Overrides the 7 core color variables in `:root { }`
-3. Redefines the 4 SVG form-control icons with Catppuccin mauve fill
-4. Adds link colors, scrollbar styles, and graph image filters
+Every FreshTomato page contains:
 
-No modifications to `at.css` are needed.
+```html
+<link rel="stylesheet" href="tomato.css">
+<link rel="stylesheet" href="<web_css>.css" id="guicss">
+```
+
+The second `<link>` is the theme slot. Setting `web_css=at-ctp-mocha` causes
+the browser to request `at-ctp-mocha.css` from the router's httpd.
+
+Our theme files start with `@import url('at.css')` to load the base AdvaFresh
+stylesheet, then override only the `--tomato-*` CSS custom properties and a
+few additional selectors (links, scrollbars, icon fills). No JavaScript is
+needed, and no other files need to be replaced.
+
+---
 
 ## Preview
 
 Open `preview/index.html` in any modern browser to see all 4 flavors
-side-by-side before installing on a router.
+interactively before installing on a router.
+
+---
 
 ## License
 
@@ -90,3 +212,4 @@ MIT — matching the Catppuccin project license.
 - **[Catppuccin](https://github.com/catppuccin/catppuccin)** — palette & design system
 - **[tsg2k2](https://github.com/tsg2k2)** — AdvaFresh theme for FreshTomato (base `at.css`)
 - **[FreshTomato Project](https://github.com/FreshTomato-Project/freshtomato-mips)** — firmware
+- **[FreshTomato Wiki — Admin Access](https://wiki.freshtomato.org/doku.php/admin_access)** — official documentation
