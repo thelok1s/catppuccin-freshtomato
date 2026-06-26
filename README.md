@@ -17,126 +17,156 @@
 
 ## How FreshTomato Theming Works
 
-The web interface (`httpd`) serves files from a directory controlled by the
-**`web_dir`** NVRAM variable (default: `/www`).  
-Each page loads a CSS file named by the **`web_css`** NVRAM variable:
+Every page loads two stylesheets:
 
 ```html
-<!-- in every .asp page -->
-<link rel="stylesheet" href="<web_css>.css">
+<link rel="stylesheet" href="tomato.css">
+<link rel="stylesheet" href="<web_css>.css" id="guicss">
 ```
 
-So setting `web_css=at-ctp-mocha` causes every page to request
-`at-ctp-mocha.css` from whichever directory `web_dir` points to.
+The second `<link>` is the theme slot — its filename is controlled by the **`web_css`** NVRAM variable.
+
+The httpd serves files from the directory set in **`web_dir`** NVRAM (default: `/www`).
 
 > [!IMPORTANT]
-> `/www` is part of the **read-only SquashFS firmware image**.  
-> You **cannot write files there** — `cp file /www/` will fail with
-> `Read-only file system`.  
-> Use one of the writable methods below instead.
+> `/www` is part of the **read-only SquashFS firmware image** — you cannot write
+> files there. `cp file /www/` will fail with `Read-only file system`.
+>
+> `web_dir` **replaces** `/www` entirely — it is not an overlay. If you set
+> `web_dir` to a directory that doesn't contain all the firmware UI files
+> (`.asp`, `.js`, `.css`…), the web interface will return **500 Unknown Read error**
+> on every page. You cannot point `web_dir` at just a single CSS file.
+
+---
+
+## Restoring Access After a 500 Error
+
+If you set `web_dir` incorrectly and lost web access, fix it over SSH:
+
+```bash
+nvram unset web_dir
+nvram commit
+service httpd restart
+```
 
 ---
 
 ## Installation
 
-### Method 1 — JFFS (recommended, survives reboots)
+The supported approach is to mirror all of `/www` into a writable location,
+drop the theme CSS there, and point `web_dir` at that location.
 
-JFFS is a writable, persistent partition stored in the router's flash.
-Enable it first under **Administration → JFFS2** if you haven't already.
+### Method A — Init Script into /tmp (recommended, no extra flash needed)
+
+This copies `/www` into a tmpfs ramdisk on every boot, then adds the theme CSS.
+`/tmp` is reset on each reboot — the copy takes ~1–2 seconds and uses ~3–5 MB of RAM.
+
+**Step 1 — Store the CSS in JFFS (persistent)**
 
 ```bash
-# 1. Create a directory to hold the custom GUI files
-mkdir -p /jffs/www
+# Enable JFFS first: Administration → JFFS2 → Enable
 
-# 2. Download the theme file (replace with your chosen flavor)
-wget -O /jffs/www/at-ctp-mocha.css \
-  https://raw.githubusercontent.com/thelok1s/catppuccin-freshtomato/main/at-ctp-mocha.css
+mkdir -p /jffs
 
-# --- OR copy from your machine over SCP ---
-# scp at-ctp-mocha.css root@192.168.1.1:/jffs/www/
+# Download your chosen flavor:
+wget -O /jffs/at-ctp-macchiato.css \
+  https://raw.githubusercontent.com/thelok1s/catppuccin-freshtomato/main/at-ctp-macchiato.css
 
-# 3. Point the web server at your JFFS directory
-#    CAUTION: if web_dir is wrong you'll lose web access — double-check the path
-nvram set web_dir=/jffs/www
+# Or copy from your PC:
+# scp at-ctp-macchiato.css root@192.168.1.1:/jffs/
+```
 
-# 4. Select the theme (filename without .css extension)
-nvram set web_css=at-ctp-mocha
+**Step 2 — Create the init script**
 
-# 5. Commit and apply
+Go to **Administration → Scripts → Init** and paste:
+
+```sh
+#!/bin/sh
+# Catppuccin FreshTomato theme — boot setup
+mkdir -p /tmp/www
+cp -a /www/. /tmp/www/
+cp /jffs/at-ctp-macchiato.css /tmp/www/
+```
+
+**Step 3 — Set NVRAM and apply**
+
+```bash
+nvram set web_dir=/tmp/www
+nvram set web_css=at-ctp-macchiato
 nvram commit
+```
 
-# 6. Restart the web server (or reboot)
+Run the init script once manually (so you don't have to reboot yet), then restart httpd:
+
+```bash
+mkdir -p /tmp/www
+cp -a /www/. /tmp/www/
+cp /jffs/at-ctp-macchiato.css /tmp/www/
 service httpd restart
 ```
 
-Then hard-refresh your browser (**Ctrl+Shift+R** / **Cmd+Shift+R**).
-
-> [!NOTE]
-> **How `web_dir` works:** FreshTomato's httpd normally serves files from
-> `/www` (read-only firmware). When you set `web_dir=/jffs/www`, the httpd
-> serves files from `/jffs/www` **instead**. Your custom CSS file must live
-> there. You do **not** need to copy all the firmware `.asp` / `.js` files —
-> only your CSS file needs to be in that directory; the firmware falls back to
-> `/www` for everything else it can't find in `web_dir`.
->
-> *(This fallback behavior is confirmed in the FreshTomato httpd source.)*
+Hard-refresh your browser (**Ctrl+Shift+R**). On every subsequent reboot the init script will repopulate `/tmp/www` automatically before httpd starts.
 
 ---
 
-### Method 2 — /tmp (temporary, lost on reboot)
+### Method B — Permanent copy in JFFS
 
-Useful for testing a theme without committing it permanently.
+Copies all of `/www` into JFFS flash — survives reboots without a script,
+but uses ~3–5 MB of JFFS space permanently.
+
+**Check available space first:**
 
 ```bash
-# 1. Download the file to /tmp
-wget -O /tmp/at-ctp-mocha.css \
-  https://raw.githubusercontent.com/thelok1s/catppuccin-freshtomato/main/at-ctp-mocha.css
+df -h /jffs
+du -sh /www
+```
 
-# --- OR copy over SCP ---
-# scp at-ctp-mocha.css root@192.168.1.1:/tmp/
+If you have enough free space:
 
-# 2. Point httpd at /tmp and set the theme
-nvram set web_dir=/tmp
-nvram set web_css=at-ctp-mocha
+```bash
+mkdir -p /jffs/www
+cp -a /www/. /jffs/www/
+
+# Download the theme CSS:
+wget -O /jffs/www/at-ctp-macchiato.css \
+  https://raw.githubusercontent.com/thelok1s/catppuccin-freshtomato/main/at-ctp-macchiato.css
+
+# Or copy from PC:
+# scp at-ctp-macchiato.css root@192.168.1.1:/jffs/www/
+
+nvram set web_dir=/jffs/www
+nvram set web_css=at-ctp-macchiato
 nvram commit
-
-# 3. Restart the web server
 service httpd restart
 ```
 
 > [!WARNING]
-> `/tmp` is RAM-based and is wiped on every reboot. The theme will disappear
-> after a restart. Use JFFS for a permanent install.
-
----
-
-### Method 3 — Web UI (no SSH required)
-
-If you prefer not to use SSH:
-
-1. First download the CSS file to your PC.
-2. Go to **Administration → JFFS2** — enable JFFS and wait for it to format.
-3. Use a tool like [WinSCP](https://winscp.net) or `scp` to place the file in `/jffs/www/`.
-4. Go to **Administration → Admin Access**.
-5. Set **"Directory with GUI files"** to `/jffs/www`.
-6. Set **"Theme UI"** to `at-ctp-mocha` (the filename stem, no `.css`).
-7. Click **Save**.
+> If JFFS space runs low in the future, the router may misbehave.
+> Method A is safer for flash longevity.
 
 ---
 
 ## Switching Flavors
 
-After initial setup, switching is a one-liner (no path change needed):
+After initial setup, switching is instant — just update the NVRAM value and restart httpd:
 
 ```bash
-nvram set web_css=at-ctp-latte && nvram commit && service httpd restart
+# Copy the new CSS first (adjust path for Method A or B):
+wget -O /jffs/at-ctp-latte.css \
+  https://raw.githubusercontent.com/thelok1s/catppuccin-freshtomato/main/at-ctp-latte.css
+cp /jffs/at-ctp-latte.css /tmp/www/   # Method A only
+
+# Switch:
+nvram set web_css=at-ctp-latte
+nvram commit
+service httpd restart
 ```
 
-Download all four flavors at once:
+**Download all four flavors at once:**
 
 ```bash
 for f in mocha macchiato frappe latte; do
-  wget -O /jffs/www/at-ctp-$f.css \
+  wget -O /jffs/at-ctp-$f.css \
     https://raw.githubusercontent.com/thelok1s/catppuccin-freshtomato/main/at-ctp-$f.css
 done
 ```
@@ -166,39 +196,39 @@ service httpd restart
 | Link hover | `mauve` |
 | Buttons, active states | `mauve` (accent) |
 | Nav icon masks | `mauve` (via `--tomato-accent-color`) |
-| Dropdown arrow ▾ | `mauve` (SVG fill override) |
-| Checkbox ✓ | `mauve` (SVG fill override) |
-| Radio • | `mauve` (SVG fill override) |
-| Error / warning ⚠ | `mauve` (SVG fill override) |
+| Dropdown arrow ▾ | `mauve` (SVG fill) |
+| Checkbox ✓ / Radio • | `mauve` (SVG fill) |
 | Control borders | `surface1` |
 | Scrollbar thumb | `surface2` |
-| Bandwidth graphs | `invert` filter (dark flavors only) |
-| Box shadows | `mauve` RGB glow (dark) / `text` RGB (Latte) |
+| Bandwidth graph images | `grayscale + invert` filter (dark flavors) |
+| Box shadows | `mauve` RGB glow |
 
 ---
 
-## How the CSS Is Loaded (technical detail)
+## How the Theme CSS Works
 
-Every FreshTomato page contains:
+Our theme files do not replace the entire stylesheet — they load the
+base AdvaFresh stylesheet first, then override only the color variables:
 
-```html
-<link rel="stylesheet" href="tomato.css">
-<link rel="stylesheet" href="<web_css>.css" id="guicss">
+```css
+@import url('at.css');   /* loads the full base UI stylesheet */
+
+:root {
+  --tomato-bg:        #1e1e2e;  /* base */
+  --tomato-nav-bg:    #181825;  /* mantle */
+  --tomato-accent-color: #cba6f7; /* mauve */
+  /* … */
+}
 ```
 
-The second `<link>` is the theme slot. Setting `web_css=at-ctp-mocha` causes
-the browser to request `at-ctp-mocha.css` from the router's httpd.
-
-Our theme files start with `@import url('at.css')` to load the base AdvaFresh
-stylesheet, then override only the `--tomato-*` CSS custom properties and a
-few additional selectors (links, scrollbars, icon fills). No JavaScript is
-needed, and no other files need to be replaced.
+This means `at.css` must be reachable from the same httpd directory as the
+theme CSS — which is why `/tmp/www` (or `/jffs/www`) must contain both.
 
 ---
 
 ## Preview
 
-Open `preview/index.html` in any modern browser to see all 4 flavors
+Open [`preview/index.html`](preview/index.html) in any modern browser to see all 4 flavors
 interactively before installing on a router.
 
 ---
@@ -212,4 +242,4 @@ MIT — matching the Catppuccin project license.
 - **[Catppuccin](https://github.com/catppuccin/catppuccin)** — palette & design system
 - **[tsg2k2](https://github.com/tsg2k2)** — AdvaFresh theme for FreshTomato (base `at.css`)
 - **[FreshTomato Project](https://github.com/FreshTomato-Project/freshtomato-mips)** — firmware
-- **[FreshTomato Wiki — Admin Access](https://wiki.freshtomato.org/doku.php/admin_access)** — official documentation
+- **[FreshTomato Wiki](https://wiki.freshtomato.org/doku.php/admin_access)** — official documentation
